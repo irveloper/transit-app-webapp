@@ -8,6 +8,10 @@ import CheckInPanel from "@/features/check-in/CheckInPanel";
 import type { CheckIn } from "@/features/check-in/types";
 import PredictDelay from "@/features/intelligence/PredictDelay";
 import DestinationSearch from "@/features/journey-planner/DestinationSearch";
+import {
+  type PlannerLocation,
+  reverseGeocode,
+} from "@/features/journey-planner/locationSearch";
 import type { TransitRoute } from "@/features/route-explorer/RouteSelector";
 import RouteSelector from "@/features/route-explorer/RouteSelector";
 import type { RouteDetail } from "@/features/transit-map/MapCanvas";
@@ -29,12 +33,6 @@ type RouteDetailResponse = {
   data: RouteDetail;
 };
 
-type UserLocation = {
-  lat: number;
-  lng: number;
-  label: string;
-};
-
 export default function Home() {
   const [routeDetail, setRouteDetail] = useState<RouteDetail | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<{
@@ -42,7 +40,17 @@ export default function Home() {
     name: string;
   } | null>(null);
   const [recentCheckIns, setRecentCheckIns] = useState<CheckIn[]>([]);
-  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [originLocation, setOriginLocation] = useState<PlannerLocation | null>(
+    null,
+  );
+  const [destinationLocation, setDestinationLocation] =
+    useState<PlannerLocation | null>(null);
+  const [mapPickTarget, setMapPickTarget] = useState<"origin" | "dest" | null>(
+    null,
+  );
+  const [resolvingMapPickTarget, setResolvingMapPickTarget] = useState<
+    "origin" | "dest" | null
+  >(null);
 
   const fetchAndShowRoute = async (routeId: string) => {
     try {
@@ -89,13 +97,69 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [selectedRoute, fetchCheckIns]);
 
+  const handleMapPick = useCallback(
+    async ({ lat, lng }: { lat: number; lng: number }) => {
+      if (!mapPickTarget) {
+        return;
+      }
+
+      const target = mapPickTarget;
+      setResolvingMapPickTarget(target);
+      setMapPickTarget(null);
+
+      const fallbackLabel = `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
+
+      try {
+        const label = await reverseGeocode(lat, lng);
+        const location = { lat, lng, label };
+
+        if (target === "origin") {
+          setOriginLocation(location);
+        } else {
+          setDestinationLocation(location);
+        }
+
+        notify.success({
+          title:
+            target === "origin"
+              ? "Punto A seleccionado"
+              : "Punto B seleccionado",
+          description: `Marcamos ${label} directamente desde el mapa.`,
+          duration: 2600,
+        });
+      } catch (err) {
+        console.error("Failed to reverse geocode picked point:", err);
+
+        const location = { lat, lng, label: fallbackLabel };
+        if (target === "origin") {
+          setOriginLocation(location);
+        } else {
+          setDestinationLocation(location);
+        }
+
+        notify.info({
+          title: target === "origin" ? "Punto A marcado" : "Punto B marcado",
+          description:
+            "No pudimos resolver la dirección, pero guardamos el pin.",
+          duration: 2600,
+        });
+      } finally {
+        setResolvingMapPickTarget(null);
+      }
+    },
+    [mapPickTarget],
+  );
+
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-slate-100">
       {/* Background Map Layer */}
       <MapCanvas
         routeDetail={routeDetail}
         checkIns={recentCheckIns}
-        userLocation={userLocation}
+        originLocation={originLocation}
+        destinationLocation={destinationLocation}
+        mapPickTarget={mapPickTarget}
+        onMapPick={handleMapPick}
       />
 
       {/* Top Floating App Bar */}
@@ -128,11 +192,17 @@ export default function Home() {
           <PredictDelay
             routeId={selectedRoute?.id ?? null}
             routeName={selectedRoute?.name ?? null}
-            userLocation={userLocation}
+            userLocation={originLocation}
           />
           <DestinationSearch
             onRouteSelect={fetchAndShowRoute}
-            onOriginChange={setUserLocation}
+            originCoords={originLocation}
+            destCoords={destinationLocation}
+            onOriginChange={setOriginLocation}
+            onDestinationChange={setDestinationLocation}
+            mapPickTarget={mapPickTarget}
+            onMapPickTargetChange={setMapPickTarget}
+            mapPickResolvingTarget={resolvingMapPickTarget}
           />
         </div>
       </div>

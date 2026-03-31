@@ -10,10 +10,12 @@ import {
   TileLayer,
   Tooltip,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import type { CheckIn } from "@/features/check-in/types";
+import type { PlannerLocation } from "@/features/journey-planner/locationSearch";
 
 // Fix for default Leaflet icons in Webpack/Next.js
 const icon = L.icon({
@@ -26,6 +28,22 @@ const icon = L.icon({
   popupAnchor: [1, -34],
   tooltipAnchor: [16, -28],
   shadowSize: [41, 41],
+});
+
+const originPinIcon = L.divIcon({
+  className: "journey-point-icon-wrapper",
+  html: '<div class="journey-point-icon journey-point-icon--origin">A</div>',
+  iconSize: [30, 42],
+  iconAnchor: [15, 42],
+  popupAnchor: [0, -34],
+});
+
+const destinationPinIcon = L.divIcon({
+  className: "journey-point-icon-wrapper",
+  html: '<div class="journey-point-icon journey-point-icon--dest">B</div>',
+  iconSize: [30, 42],
+  iconAnchor: [15, 42],
+  popupAnchor: [0, -34],
 });
 
 // Use Cancún as center
@@ -69,16 +87,13 @@ export type RouteDetail = {
   directions: RouteDetailDirection[];
 };
 
-type UserLocation = {
-  lat: number;
-  lng: number;
-  label: string;
-};
-
 type Props = {
   routeDetail?: RouteDetail | null;
   checkIns?: CheckIn[];
-  userLocation?: UserLocation | null;
+  originLocation?: PlannerLocation | null;
+  destinationLocation?: PlannerLocation | null;
+  mapPickTarget?: "origin" | "dest" | null;
+  onMapPick?: (coords: { lat: number; lng: number }) => void;
 };
 
 // Helper component to fit map bounds when route changes
@@ -101,7 +116,7 @@ function FocusLocation({
   location,
   enabled,
 }: {
-  location: UserLocation | null;
+  location: PlannerLocation | null;
   enabled: boolean;
 }) {
   const map = useMap();
@@ -117,6 +132,26 @@ function FocusLocation({
   return null;
 }
 
+function ClickHandler({
+  active,
+  onPick,
+}: {
+  active: boolean;
+  onPick?: (coords: { lat: number; lng: number }) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      if (!active) {
+        return;
+      }
+
+      onPick?.({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+
+  return null;
+}
+
 function formatTimeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -128,7 +163,10 @@ function formatTimeAgo(dateStr: string): string {
 export default function MapCanvas({
   routeDetail,
   checkIns = [],
-  userLocation = null,
+  originLocation = null,
+  destinationLocation = null,
+  mapPickTarget = null,
+  onMapPick,
 }: Props) {
   const [isMounted, setIsMounted] = useState(false);
 
@@ -149,6 +187,15 @@ export default function MapCanvas({
 
   // Get stops from the first direction (outbound) to display on the map
   const stops = routeDetail?.directions?.[0]?.stops ?? [];
+  const hasRoutePath = Boolean(routeDetail?.path_coordinates.length);
+  const focusLocation = originLocation ?? destinationLocation;
+  const journeyLine =
+    originLocation && destinationLocation
+      ? ([
+          [originLocation.lat, originLocation.lng],
+          [destinationLocation.lat, destinationLocation.lng],
+        ] as [number, number][])
+      : [];
 
   return (
     <div className="h-full w-full absolute inset-0 z-0">
@@ -163,21 +210,67 @@ export default function MapCanvas({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        <ClickHandler active={Boolean(mapPickTarget)} onPick={onMapPick} />
+
         <FocusLocation
-          location={userLocation}
-          enabled={Boolean(userLocation)}
+          location={focusLocation}
+          enabled={Boolean(focusLocation) && journeyLine.length < 2}
         />
 
+        {!hasRoutePath && journeyLine.length > 1 ? (
+          <FitBounds coordinates={journeyLine} />
+        ) : null}
+
         {/* Location marker */}
-        {userLocation ? (
-          <Marker position={[userLocation.lat, userLocation.lng]} icon={icon}>
-            <Popup>{userLocation.label}</Popup>
-          </Marker>
-        ) : (
+        {!originLocation && !destinationLocation ? (
           <Marker position={CANCUN_CENTER} icon={icon}>
             <Popup>Centro de Cancún.</Popup>
           </Marker>
-        )}
+        ) : null}
+
+        {originLocation ? (
+          <Marker
+            position={[originLocation.lat, originLocation.lng]}
+            icon={originPinIcon}
+          >
+            <Popup>
+              <div className="text-sm">
+                <p className="font-semibold">Punto A</p>
+                <p className="text-slate-500 text-xs">{originLocation.label}</p>
+              </div>
+            </Popup>
+          </Marker>
+        ) : null}
+
+        {destinationLocation ? (
+          <Marker
+            position={[destinationLocation.lat, destinationLocation.lng]}
+            icon={destinationPinIcon}
+          >
+            <Popup>
+              <div className="text-sm">
+                <p className="font-semibold">Punto B</p>
+                <p className="text-slate-500 text-xs">
+                  {destinationLocation.label}
+                </p>
+              </div>
+            </Popup>
+          </Marker>
+        ) : null}
+
+        {!hasRoutePath && journeyLine.length > 1 ? (
+          <Polyline
+            positions={journeyLine}
+            pathOptions={{
+              color: "#0f172a",
+              weight: 3,
+              opacity: 0.5,
+              dashArray: "8 10",
+              lineCap: "round",
+              lineJoin: "round",
+            }}
+          />
+        ) : null}
 
         {/* Route polyline */}
         {routeDetail && routeDetail.path_coordinates.length > 0 && (
@@ -280,6 +373,13 @@ export default function MapCanvas({
           );
         })}
       </MapContainer>
+
+      {mapPickTarget && (
+        <div className="pointer-events-none absolute left-1/2 top-24 z-[1000] -translate-x-1/2 rounded-full border border-slate-200/70 bg-white/95 px-4 py-2 text-sm font-medium text-slate-800 shadow-xl backdrop-blur">
+          Toca el mapa para fijar{" "}
+          {mapPickTarget === "origin" ? "Punto A" : "Punto B"}
+        </div>
+      )}
     </div>
   );
 }

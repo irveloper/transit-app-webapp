@@ -170,7 +170,7 @@ export default function StopMapPicker({
           const isTerminal = idx === 0 || idx === stops.length - 1;
           return (
             <CircleMarker
-              key={stop.stop_id}
+              key={stop.route_stop_id}
               center={[stop.lat, stop.lng]}
               radius={isTerminal ? 8 : 6}
               pathOptions={{

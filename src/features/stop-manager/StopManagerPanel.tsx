@@ -273,7 +273,7 @@ export default function StopManagerPanel({
     try {
       await reorderStops(
         selectedDirId,
-        nextStops.map((stop) => stop.stop_id),
+        nextStops.map((stop) => stop.route_stop_id),
       );
       setLastOrderSyncAt(Date.now());
     } catch {

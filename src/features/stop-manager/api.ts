@@ -5,7 +5,7 @@ type ApiResponse<T> = { success: boolean; data: T };
 
 export function getStopsByDirection(directionId: string) {
   return fetchApi<ApiResponse<ManagedStop[]>>(
-    `/api/stops/direction/${directionId}`
+    `/api/stops/direction/${directionId}`,
   );
 }
 
@@ -24,7 +24,7 @@ export function createStop(input: {
 
 export function updateStop(
   stopId: string,
-  data: { stop_name?: string; lat?: number; lng?: number }
+  data: { stop_name?: string; lat?: number; lng?: number },
 ) {
   return fetchApi<ApiResponse<ManagedStop>>(`/api/stops/${stopId}`, {
     method: "PUT",
@@ -35,24 +35,24 @@ export function updateStop(
 export function removeStop(stopId: string, directionId: string) {
   return fetchApi<ApiResponse<null>>(
     `/api/stops/${stopId}/direction/${directionId}`,
-    { method: "DELETE" }
+    { method: "DELETE" },
   );
 }
 
-export function reorderStops(directionId: string, stopIds: string[]) {
+export function reorderStops(directionId: string, routeStopIds: string[]) {
   return fetchApi<ApiResponse<null>>(
     `/api/stops/direction/${directionId}/reorder`,
-    { method: "PUT", body: JSON.stringify({ stopIds }) }
+    { method: "PUT", body: JSON.stringify({ routeStopIds }) },
   );
 }
 
 export function insertExistingStop(
   directionId: string,
   stopId: string,
-  sequence: number
+  sequence: number,
 ) {
   return fetchApi<ApiResponse<null>>(
     `/api/stops/direction/${directionId}/insert`,
-    { method: "POST", body: JSON.stringify({ stopId, sequence }) }
+    { method: "POST", body: JSON.stringify({ stopId, sequence }) },
   );
 }

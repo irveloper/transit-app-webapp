@@ -1,4 +1,5 @@
 export type ManagedStop = {
+  route_stop_id: string;
   stop_id: string;
   stop_name: string;
   stop_sequence: number;

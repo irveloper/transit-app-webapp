@@ -1,0 +1,18 @@
+{
+  "name": "RutaCancun",
+  "short_name": "RutaCancun",
+  "description": "Mapas y transporte en vivo para Cancún",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f1f5f9",
+  "theme_color": "#2563eb",
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

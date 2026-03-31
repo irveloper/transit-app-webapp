@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -35,16 +35,35 @@ type Props = {
   onPick: (lat: number, lng: number) => void;
   routeCoordinates?: [number, number][];
   routeColor?: string;
+  fitBoundsKey?: string | null;
 };
 
-function FitBounds({ coordinates }: { coordinates: [number, number][] }) {
+function FitBounds({
+  coordinates,
+  fitBoundsKey,
+}: {
+  coordinates: [number, number][];
+  fitBoundsKey: string | null;
+}) {
   const map = useMap();
+  const lastFitBoundsKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (coordinates.length > 0) {
+    if (!fitBoundsKey) {
+      lastFitBoundsKeyRef.current = null;
+      return;
+    }
+
+    if (
+      coordinates.length > 0 &&
+      lastFitBoundsKeyRef.current !== fitBoundsKey
+    ) {
       const bounds = L.latLngBounds(coordinates);
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
+      lastFitBoundsKeyRef.current = fitBoundsKey;
     }
-  }, [coordinates, map]);
+  }, [coordinates, fitBoundsKey, map]);
+
   return null;
 }
 
@@ -72,6 +91,7 @@ export default function StopMapPicker({
   onPick,
   routeCoordinates,
   routeColor,
+  fitBoundsKey = null,
 }: Props) {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
@@ -115,7 +135,9 @@ export default function StopMapPicker({
 
         <ClickHandler onPick={onPick} active={pickMode} />
 
-        {boundsCoords.length > 0 && <FitBounds coordinates={boundsCoords} />}
+        {boundsCoords.length > 0 && (
+          <FitBounds coordinates={boundsCoords} fitBoundsKey={fitBoundsKey} />
+        )}
 
         {/* Route polyline */}
         {displayCoordinates.length > 1 && (

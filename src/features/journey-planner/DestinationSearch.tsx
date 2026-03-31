@@ -73,6 +73,8 @@ export default function DestinationSearch({
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const originInputValue = originCoords?.label ?? originText;
+  const destInputValue = destCoords?.label ?? destText;
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -125,12 +127,14 @@ export default function DestinationSearch({
   useEffect(() => {
     if (originCoords) {
       setOriginText(originCoords.label);
+      setOriginSuggestions([]);
     }
   }, [originCoords]);
 
   useEffect(() => {
     if (destCoords) {
       setDestText(destCoords.label);
+      setDestSuggestions([]);
     }
   }, [destCoords]);
 
@@ -324,7 +328,7 @@ export default function DestinationSearch({
               <input
                 type="text"
                 placeholder="Elige origen"
-                value={originText}
+                value={originInputValue}
                 onChange={(e) => {
                   setOriginText(e.target.value);
                   onOriginChange?.(null);
@@ -391,7 +395,7 @@ export default function DestinationSearch({
               <input
                 type="text"
                 placeholder="Elige destino"
-                value={destText}
+                value={destInputValue}
                 onChange={(e) => {
                   setDestText(e.target.value);
                   onDestinationChange?.(null);

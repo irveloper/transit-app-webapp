@@ -318,7 +318,7 @@ export default function StopManagerPanel({
       : "Haz cambios y el mapa responde al instante";
 
   return (
-    <div className="flex h-full flex-col border-r border-slate-200 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_36%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.98))] backdrop-blur-md">
+    <div className="flex h-full flex-col border-r border-slate-200 bg-slate-50">
       <div className="shrink-0 border-b border-slate-200/80 px-4 py-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -404,13 +404,13 @@ export default function StopManagerPanel({
                 onClick={() => handleDirChange(direction.id)}
                 className={`rounded-2xl border px-3 py-3 text-left transition ${
                   selectedDirId === direction.id
-                    ? "border-transparent text-white shadow-lg"
+                    ? "border-transparent text-white shadow-md"
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 }`}
                 style={
                   selectedDirId === direction.id
                     ? {
-                        background: `linear-gradient(135deg, ${panelAccent}, rgba(15,23,42,0.92))`,
+                        backgroundColor: panelAccent,
                       }
                     : undefined
                 }

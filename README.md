@@ -20,7 +20,6 @@ Frontend de [Public Transit App](https://github.com/irveloper/transit-app-webapp
 | [Next.js](https://nextjs.org/) 16 | Framework React |
 | [Tailwind CSS](https://tailwindcss.com/) 4 | Estilos |
 | [Leaflet](https://leafletjs.com/) + React Leaflet | Mapas interactivos |
-| [Supabase](https://supabase.com/) | Auth y realtime |
 | [Sileo](https://www.npmjs.com/package/sileo) | State management |
 | [Lucide](https://lucide.dev/) | Iconos |
 | [Biome](https://biomejs.dev/) | Linter y formatter |
@@ -40,7 +39,7 @@ src/
     stop-manager/         # CRUD de paradas (admin)
     transit-map/          # Mapa principal con Leaflet
   shared/
-    api/                  # Cliente API y Supabase
+    api/                  # Cliente API
     ui/                   # Componentes compartidos (toasts)
 ```
 
@@ -57,7 +56,7 @@ pnpm install
 
 # Variables de entorno
 cp .env.example .env.local
-# Configurar NEXT_PUBLIC_API_URL y NEXT_PUBLIC_SUPABASE_*
+# Configurar NEXT_PUBLIC_API_URL
 
 # Iniciar en desarrollo
 pnpm dev

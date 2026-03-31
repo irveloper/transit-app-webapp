@@ -39,7 +39,7 @@ export default function StopList({
         const isLast = index === stops.length - 1;
 
         return (
-          <div key={stop.stop_id} className="space-y-2">
+          <div key={stop.route_stop_id} className="space-y-2">
             <div className="group rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm transition hover:border-slate-300 hover:shadow-md">
               <div className="flex items-start gap-3">
                 <div className="flex flex-col items-center gap-2">

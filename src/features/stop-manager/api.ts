@@ -2,11 +2,34 @@ import { fetchApi } from "@/shared/api/apiClient";
 import type { ManagedStop } from "./types";
 
 type ApiResponse<T> = { success: boolean; data: T };
+type ManagedStopApiResponse = Partial<ManagedStop> & {
+  id?: string;
+  routeStopId?: string;
+  stopId?: string;
+  stopName?: string;
+  stopSequence?: number;
+};
 
-export function getStopsByDirection(directionId: string) {
-  return fetchApi<ApiResponse<ManagedStop[]>>(
+function normalizeManagedStop(stop: ManagedStopApiResponse): ManagedStop {
+  return {
+    route_stop_id: stop.route_stop_id ?? stop.routeStopId ?? stop.id ?? "",
+    stop_id: stop.stop_id ?? stop.stopId ?? "",
+    stop_name: stop.stop_name ?? stop.stopName ?? "",
+    stop_sequence: stop.stop_sequence ?? stop.stopSequence ?? 0,
+    lat: typeof stop.lat === "number" ? stop.lat : Number(stop.lat ?? 0),
+    lng: typeof stop.lng === "number" ? stop.lng : Number(stop.lng ?? 0),
+  };
+}
+
+export async function getStopsByDirection(directionId: string) {
+  const response = await fetchApi<ApiResponse<ManagedStopApiResponse[]>>(
     `/api/stops/direction/${directionId}`,
   );
+
+  return {
+    ...response,
+    data: response.data.map(normalizeManagedStop),
+  };
 }
 
 export function createStop(input: {

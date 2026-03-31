@@ -261,8 +261,20 @@ export default function StopManagerPanel({
 
     const previousStops = stops;
     const nextStops = reorderStopList(stops, from, to);
+    const routeStopIds = nextStops
+      .map((stop) => stop.route_stop_id)
+      .filter(Boolean);
 
     if (nextStops === stops) {
+      return;
+    }
+
+    if (routeStopIds.length !== nextStops.length) {
+      notify.error({
+        title: "No se pudo reordenar",
+        description:
+          "Faltan identificadores de parada en la lista actual. Recarga la dirección e inténtalo otra vez.",
+      });
       return;
     }
 
@@ -271,10 +283,7 @@ export default function StopManagerPanel({
     setIsReordering(true);
 
     try {
-      await reorderStops(
-        selectedDirId,
-        nextStops.map((stop) => stop.route_stop_id),
-      );
+      await reorderStops(selectedDirId, routeStopIds);
       setLastOrderSyncAt(Date.now());
     } catch {
       setStops(previousStops);

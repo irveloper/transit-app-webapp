@@ -2,6 +2,7 @@
 
 import {
   Bus,
+  Crosshair,
   Loader2,
   LocateFixed,
   MapPin,
@@ -10,14 +11,13 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type {
+  GeocodeSuggestion,
+  PlannerLocation,
+} from "@/features/journey-planner/locationSearch";
+import { geocode } from "@/features/journey-planner/locationSearch";
 import { fetchApi } from "@/shared/api/apiClient";
 import { notify } from "@/shared/ui/notify";
-
-type GeocodeSuggestion = {
-  display_name: string;
-  lat: string;
-  lon: string;
-};
 
 type RouteResult = {
   id: string;
@@ -34,31 +34,29 @@ type RouteResponse = {
   data: RouteResult[];
 };
 
-type Coords = { lat: number; lng: number; label: string };
-
 type Props = {
+  originCoords: PlannerLocation | null;
+  destCoords: PlannerLocation | null;
   onRouteSelect?: (routeId: string) => void;
-  onOriginChange?: (coords: Coords | null) => void;
+  onOriginChange?: (coords: PlannerLocation | null) => void;
+  onDestinationChange?: (coords: PlannerLocation | null) => void;
+  mapPickTarget?: "origin" | "dest" | null;
+  onMapPickTargetChange?: (target: "origin" | "dest" | null) => void;
+  mapPickResolvingTarget?: "origin" | "dest" | null;
 };
 
-async function geocode(query: string): Promise<GeocodeSuggestion[]> {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=4&countrycodes=mx&viewbox=-87.1,-86.7,21.0,21.3&bounded=1`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": "RutaCancun/1.0" },
-  });
-  if (!res.ok) return [];
-  return res.json();
-}
-
 export default function DestinationSearch({
+  originCoords,
+  destCoords,
   onRouteSelect,
   onOriginChange,
+  onDestinationChange,
+  mapPickTarget = null,
+  onMapPickTargetChange,
+  mapPickResolvingTarget = null,
 }: Props) {
   const [originText, setOriginText] = useState("");
   const [destText, setDestText] = useState("");
-  const [originCoords, setOriginCoords] = useState<Coords | null>(null);
-  const [destCoords, setDestCoords] = useState<Coords | null>(null);
-
   const [originSuggestions, setOriginSuggestions] = useState<
     GeocodeSuggestion[]
   >([]);
@@ -125,8 +123,16 @@ export default function DestinationSearch({
   }, [originCoords]);
 
   useEffect(() => {
-    onOriginChange?.(originCoords);
-  }, [onOriginChange, originCoords]);
+    if (originCoords) {
+      setOriginText(originCoords.label);
+    }
+  }, [originCoords]);
+
+  useEffect(() => {
+    if (destCoords) {
+      setDestText(destCoords.label);
+    }
+  }, [destCoords]);
 
   const handleGeocode = (
     text: string,
@@ -154,13 +160,14 @@ export default function DestinationSearch({
     setLocatingUser(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setOriginCoords({
+        onOriginChange?.({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           label: "Mi Ubicación",
         });
         setOriginText("Mi Ubicación");
         setOriginSuggestions([]);
+        setResults(null);
         setLocatingUser(false);
         notify.success({
           title: "Ubicación detectada",
@@ -183,21 +190,28 @@ export default function DestinationSearch({
     suggestion: GeocodeSuggestion,
     field: "origin" | "dest",
   ) => {
-    const coords: Coords = {
+    const coords: PlannerLocation = {
       lat: parseFloat(suggestion.lat),
       lng: parseFloat(suggestion.lon),
       label: suggestion.display_name.split(",")[0],
     };
     if (field === "origin") {
-      setOriginCoords(coords);
       setOriginText(coords.label);
       setOriginSuggestions([]);
+      onOriginChange?.(coords);
     } else {
-      setDestCoords(coords);
       setDestText(coords.label);
       setDestSuggestions([]);
+      onDestinationChange?.(coords);
     }
+    setResults(null);
     setFocusedField(null);
+  };
+
+  const toggleMapPick = (field: "origin" | "dest") => {
+    setFocusedField(null);
+    setResults(null);
+    onMapPickTargetChange?.(mapPickTarget === field ? null : field);
   };
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -257,35 +271,97 @@ export default function DestinationSearch({
           Planea tu Viaje
         </h2>
 
+        {(mapPickTarget || mapPickResolvingTarget) && (
+          <div className="mb-4 rounded-2xl border border-sky-200 bg-sky-50 px-3 py-3 text-sm text-sky-900">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-full bg-sky-600 p-1.5 text-white">
+                {mapPickResolvingTarget ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Crosshair className="h-3.5 w-3.5" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">
+                  {mapPickResolvingTarget === "origin" &&
+                    "Guardando Punto A desde el mapa..."}
+                  {mapPickResolvingTarget === "dest" &&
+                    "Guardando Punto B desde el mapa..."}
+                  {!mapPickResolvingTarget &&
+                    mapPickTarget === "origin" &&
+                    "Toca el mapa para fijar el Punto A"}
+                  {!mapPickResolvingTarget &&
+                    mapPickTarget === "dest" &&
+                    "Toca el mapa para fijar el Punto B"}
+                </p>
+                <p className="mt-1 text-sky-800/80">
+                  Usa el mapa de fondo para dejar el pin exacto en el origen o
+                  el destino.
+                </p>
+              </div>
+              {mapPickTarget && !mapPickResolvingTarget && (
+                <button
+                  type="button"
+                  onClick={() => onMapPickTargetChange?.(null)}
+                  className="rounded-full p-1 text-sky-700 transition-colors hover:bg-sky-100"
+                  aria-label="Cancelar selección en mapa"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSearch} className="flex flex-col gap-3">
           {/* Origin field */}
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-blue-500" />
-            <input
-              type="text"
-              placeholder="Mi Ubicación"
-              value={originText}
-              onChange={(e) => {
-                setOriginText(e.target.value);
-                setOriginCoords(null);
-                handleGeocode(e.target.value, setOriginSuggestions);
-              }}
-              onFocus={() => setFocusedField("origin")}
-              className="w-full pl-8 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
-            />
-            <button
-              type="button"
-              onClick={useMyLocation}
-              disabled={locatingUser}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-blue-500 hover:text-blue-700 transition-colors"
-              title="Usar mi ubicación"
-            >
-              {locatingUser ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <LocateFixed className="w-4 h-4" />
-              )}
-            </button>
+          <div>
+            <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Punto A
+            </span>
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-blue-500" />
+              <input
+                type="text"
+                placeholder="Elige origen"
+                value={originText}
+                onChange={(e) => {
+                  setOriginText(e.target.value);
+                  onOriginChange?.(null);
+                  setResults(null);
+                  handleGeocode(e.target.value, setOriginSuggestions);
+                }}
+                onFocus={() => setFocusedField("origin")}
+                className="w-full pl-8 pr-20 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+              />
+              <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => toggleMapPick("origin")}
+                  className={`rounded-full p-1 transition-colors ${
+                    mapPickTarget === "origin"
+                      ? "bg-blue-600 text-white"
+                      : "text-slate-500 hover:bg-slate-200 hover:text-blue-700"
+                  }`}
+                  title="Elegir Punto A en el mapa"
+                >
+                  <MapPin className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={useMyLocation}
+                  disabled={locatingUser}
+                  className="rounded-full p-1 text-blue-500 transition-colors hover:bg-slate-200 hover:text-blue-700"
+                  title="Usar mi ubicación"
+                >
+                  {locatingUser ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <LocateFixed className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
 
             {/* Origin suggestions */}
             {focusedField === "origin" && originSuggestions.length > 0 && (
@@ -306,21 +382,39 @@ export default function DestinationSearch({
           </div>
 
           {/* Destination field */}
-          <div className="relative">
-            <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-500" />
-            <input
-              type="text"
-              placeholder="¿A dónde vas?"
-              value={destText}
-              onChange={(e) => {
-                setDestText(e.target.value);
-                setDestCoords(null);
-                handleGeocode(e.target.value, setDestSuggestions);
-              }}
-              onFocus={() => setFocusedField("dest")}
-              className="w-full pl-8 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-rose-500 outline-none transition-all dark:text-white"
-              required
-            />
+          <div>
+            <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Punto B
+            </span>
+            <div className="relative">
+              <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-500" />
+              <input
+                type="text"
+                placeholder="Elige destino"
+                value={destText}
+                onChange={(e) => {
+                  setDestText(e.target.value);
+                  onDestinationChange?.(null);
+                  setResults(null);
+                  handleGeocode(e.target.value, setDestSuggestions);
+                }}
+                onFocus={() => setFocusedField("dest")}
+                className="w-full pl-8 pr-12 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-rose-500 outline-none transition-all dark:text-white"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => toggleMapPick("dest")}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 transition-colors ${
+                  mapPickTarget === "dest"
+                    ? "bg-rose-600 text-white"
+                    : "text-slate-500 hover:bg-slate-200 hover:text-rose-700"
+                }`}
+                title="Elegir Punto B en el mapa"
+              >
+                <MapPin className="h-4 w-4" />
+              </button>
+            </div>
 
             {/* Destination suggestions */}
             {focusedField === "dest" && destSuggestions.length > 0 && (

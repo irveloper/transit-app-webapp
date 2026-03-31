@@ -22,5 +22,46 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Helvetica, sans-serif;
+}
+
+.journey-point-icon-wrapper {
+  background: transparent;
+  border: 0;
+}
+
+.journey-point-icon {
+  position: relative;
+  display: grid;
+  height: 30px;
+  width: 30px;
+  place-items: center;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.24);
+}
+
+.journey-point-icon::after {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  height: 14px;
+  width: 14px;
+  content: "";
+  transform: translateX(-50%) rotate(45deg);
+  border-bottom-right-radius: 3px;
+  background: inherit;
+  box-shadow: 8px 8px 14px rgba(15, 23, 42, 0.08);
+  z-index: -1;
+}
+
+.journey-point-icon--origin {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.journey-point-icon--dest {
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
 }

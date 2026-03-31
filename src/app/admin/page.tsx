@@ -141,6 +141,10 @@ export default function AdminPage() {
     routeDetail?.directions.find(
       (direction) => direction.id === selectedDirectionId,
     ) ?? null;
+  const mapFitBoundsKey =
+    currentRoute && selectedDirectionId
+      ? `${currentRoute.id}:${selectedDirectionId}`
+      : (currentRoute?.id ?? null);
   const selectedDirectionPath =
     selectedDirectionId && stops.length > 1
       ? stops.map((stop) => [stop.lat, stop.lng] as [number, number])
@@ -184,6 +188,7 @@ export default function AdminPage() {
             onPick={handlePick}
             routeCoordinates={selectedDirectionPath}
             routeColor={currentRoute?.color ?? undefined}
+            fitBoundsKey={mapFitBoundsKey}
           />
         </div>
       </div>

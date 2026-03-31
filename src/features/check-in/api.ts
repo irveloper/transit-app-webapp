@@ -20,6 +20,6 @@ export function createCheckIn(input: CreateCheckInInput) {
 
 export function getRecentCheckIns(routeId: string) {
   return fetchApi<ApiResponse<CheckIn[]>>(
-    `/api/check-ins/recent?routeId=${routeId}`
+    `/api/check-ins/recent?routeId=${routeId}`,
   );
 }

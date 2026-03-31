@@ -12,7 +12,13 @@ type ManagedStopApiResponse = Partial<ManagedStop> & {
 
 function normalizeManagedStop(stop: ManagedStopApiResponse): ManagedStop {
   return {
-    route_stop_id: stop.route_stop_id ?? stop.routeStopId ?? stop.id ?? "",
+    route_stop_id:
+      stop.route_stop_id ??
+      stop.routeStopId ??
+      stop.id ??
+      stop.stop_id ??
+      stop.stopId ??
+      "",
     stop_id: stop.stop_id ?? stop.stopId ?? "",
     stop_name: stop.stop_name ?? stop.stopName ?? "",
     stop_sequence: stop.stop_sequence ?? stop.stopSequence ?? 0,

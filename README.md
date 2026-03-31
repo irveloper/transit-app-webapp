@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Public Transit App - Web App
 
-## Getting Started
+Frontend de [Public Transit App](https://github.com/irveloper/transit-app-webapp), una aplicacion colaborativa de transporte publico para ciudades de LATAM donde Google Maps no tiene cobertura de transito.
 
-First, run the development server:
+> Es Waze, pero para el transporte publico de LATAM.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Features
+
+- **Mapa interactivo** — Visualizacion de paradas y rutas en tiempo real con Leaflet
+- **Check-in en tiempo real** — Reporta tu estado: esperando en parada, arriba del autobus, condiciones del viaje
+- **Explorador de rutas** — Busca que autobus tomar para ir del punto A al punto B
+- **Prediccion inteligente** — Estimacion del mejor momento para salir a tu parada (powered by LLMs)
+- **Admin panel** — Gestion de paradas y rutas en `/admin`
+- **PWA ready** — Instalable como app nativa en dispositivos moviles
+
+## Tech Stack
+
+| Tecnologia | Uso |
+|---|---|
+| [Next.js](https://nextjs.org/) 16 | Framework React |
+| [Tailwind CSS](https://tailwindcss.com/) 4 | Estilos |
+| [Leaflet](https://leafletjs.com/) + React Leaflet | Mapas interactivos |
+| [Supabase](https://supabase.com/) | Auth y realtime |
+| [Sileo](https://www.npmjs.com/package/sileo) | State management |
+| [Lucide](https://lucide.dev/) | Iconos |
+| [Biome](https://biomejs.dev/) | Linter y formatter |
+
+## Estructura del proyecto
+
+```
+src/
+  app/                    # Pages (App Router)
+    page.tsx              # Pagina principal con mapa
+    admin/page.tsx        # Panel de administracion
+  features/
+    check-in/             # Check-in de usuarios en paradas
+    intelligence/         # Prediccion de retrasos con IA
+    journey-planner/      # Planificador de viajes A -> B
+    route-explorer/       # Explorador de rutas disponibles
+    stop-manager/         # CRUD de paradas (admin)
+    transit-map/          # Mapa principal con Leaflet
+  shared/
+    api/                  # Cliente API y Supabase
+    ui/                   # Componentes compartidos (toasts)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Requisitos
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Node.js >= 18
+- pnpm
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup
 
-## Learn More
+```bash
+# Instalar dependencias
+pnpm install
 
-To learn more about Next.js, take a look at the following resources:
+# Variables de entorno
+cp .env.example .env.local
+# Configurar NEXT_PUBLIC_API_URL y NEXT_PUBLIC_SUPABASE_*
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Iniciar en desarrollo
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Comando | Descripcion |
+|---|---|
+| `pnpm dev` | Servidor de desarrollo |
+| `pnpm build` | Build de produccion |
+| `pnpm start` | Servidor de produccion |
+| `pnpm lint` | Lint con Biome |
+| `pnpm format` | Formatear codigo con Biome |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy
+
+Desplegado en **CubePath** como contenedor independiente.
+
+- **Demo**: [transitbackendapp-transitappwebapp-pusca-98e5c4-107-148-105-28.traefik.me](https://transitbackendapp-transitappwebapp-pusca-98e5c4-107-148-105-28.traefik.me/)
+
+---
+
+Hackathon CubePath x Midudev 2026

@@ -1,4 +1,4 @@
-export type CheckInStatus = 'Fluido' | 'Lleno' | 'Tráfico';
+export type CheckInStatus = "Fluido" | "Lleno" | "Tráfico";
 
 export type CheckIn = {
   id: string;
